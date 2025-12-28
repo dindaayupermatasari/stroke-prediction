@@ -6,7 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 # ==================================================
-# SET PAGE CONFIG — HARUS PALING ATAS
+# ⚠️ HARUS PALING ATAS — TANPA APAPUN SEBELUM INI
 # ==================================================
 st.set_page_config(
     page_title="Dashboard Prediksi Penyakit Stroke",
@@ -16,7 +16,7 @@ st.set_page_config(
 
 
 # ==================================================
-# LOAD MODEL
+# BARU BOLEH STREAMLIT COMMAND LAIN
 # ==================================================
 @st.cache_resource
 def load_model():
@@ -24,14 +24,6 @@ def load_model():
 
 
 model = load_model()
-
-
-# Page layout
-st.set_page_config(
-    page_title="Dashboard Prediksi Penyakit Stroke",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
 
 # Header
 st.title("Aplikasi Prediksi Risiko Stroke")
