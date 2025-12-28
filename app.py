@@ -4,12 +4,16 @@ import joblib
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from sklearn.ensemble import RandomForestClassifier
-from imblearn.over_sampling import RandomOverSampler
-from sklearn.model_selection import train_test_split, GridSearchCV
+
 
 # Load the model for predictions
-model = joblib.load("models/stroke_model.pkl")
+@st.cache_resource
+def load_model():
+    return joblib.load("models/stroke_model.pkl")
+
+
+model = load_model()
+
 
 # Page layout
 st.set_page_config(
@@ -43,26 +47,7 @@ if menu == "Home":
         yang mungkin Anda hadapi.
         """
     )
-    st.image("images/stroke_image.jpg", use_container_width=True)
-
-history_data = pd.DataFrame(
-    {
-        "Umur": [35, 60, 45, 50, 70],
-        "Jenis Kelamin": [1, 0, 1, 0, 1],
-        "Hipertensi": [1, 0, 1, 0, 1],
-        "Penyakit Jantung": [0, 1, 0, 1, 0],
-        "BMI": [22, 30, 27, 25, 35],
-        "Glukosa Darah": [120, 110, 130, 150, 100],
-        "Status Merokok": [0, 1, 0, 2, 2],
-        "Hasil Prediksi": [
-            "Tidak Berisiko",
-            "Berisiko",
-            "Tidak Berisiko",
-            "Berisiko",
-            "Tidak Berisiko",
-        ],
-    }
-)
+    st.image("images/stroke_image.jpg", use_column_width=True)
 
 
 # Dummy Data for Patient History
@@ -171,47 +156,64 @@ if menu == "Prediksi Risiko Stroke":
     )
 
     # Predict and recommend
+    if "prediction" not in st.session_state:
+        st.session_state.prediction = None
+
     if st.button("Prediksi Risiko Stroke"):
-        prediction = model.predict(input_data)  # Make the prediction
-        if prediction[0] == 1:
-            st.error("Hasil: Berisiko Stroke")
-            st.subheader("Rekomendasi Tindakan Medis:")
-            st.markdown(rekomendasi_tindakan(1))
-        else:
-            st.success("Hasil: Tidak Berisiko Stroke")
-            st.subheader("Rekomendasi Tindakan Medis:")
-            st.markdown(rekomendasi_tindakan(0))
+        st.session_state.prediction = model.predict(input_data)
+
+        if st.session_state.prediction is not None:
+            if st.session_state.prediction[0] == 1:
+                st.error("Hasil: Berisiko Stroke")
+                st.subheader("Rekomendasi Tindakan Medis:")
+                st.markdown(rekomendasi_tindakan(1))
+            else:
+                st.success("Hasil: Tidak Berisiko Stroke")
+                st.subheader("Rekomendasi Tindakan Medis:")
+                st.markdown(rekomendasi_tindakan(0))
 
     if st.button("Simpan Data ke History"):
-        new_data = {
-            "Nama": "Pasien Baru",
-            "Tanggal Pemeriksaan": pd.Timestamp.now().date(),
-            "Umur": age,
-            "Jenis Kelamin": "Perempuan" if gender == 1 else "Laki-laki",
-            "Hipertensi": "Ya" if hypertension == 1 else "Tidak",
-            "Penyakit Jantung": "Ya" if heart_disease == 1 else "Tidak",
-            "BMI": bmi,
-            "Glukosa Darah": avg_glucose_level,
-            "Status Merokok": list(smoking_status_dict.keys())[smoking_status],
-            "Hasil Prediksi": "Berisiko" if prediction[0] == 1 else "Tidak Berisiko",
-        }
-        history_data = history_data.append(new_data, ignore_index=True)
-        st.success("Data berhasil disimpan ke history.")
+        if st.session_state.prediction is None:
+            st.warning("Silakan lakukan prediksi terlebih dahulu.")
+        else:
+            new_data = {
+                "Nama": "Pasien Baru",
+                "Tanggal Pemeriksaan": pd.Timestamp.now().date(),
+                "Umur": age,
+                "Jenis Kelamin": "Perempuan" if gender == 1 else "Laki-laki",
+                "Hipertensi": "Ya" if hypertension == 1 else "Tidak",
+                "Penyakit Jantung": "Ya" if heart_disease == 1 else "Tidak",
+                "BMI": bmi,
+                "Glukosa Darah": avg_glucose_level,
+                "Status Merokok": list(smoking_status_dict.keys())[smoking_status],
+                "Hasil Prediksi": (
+                    "Berisiko"
+                    if st.session_state.prediction[0] == 1
+                    else "Tidak Berisiko"
+                ),
+            }
+
+            st.session_state.history_data = pd.concat(
+                [st.session_state.history_data, pd.DataFrame([new_data])],
+                ignore_index=True,
+            )
+            st.success("Data berhasil disimpan ke history.")
+
 
 # History Data and Stroke Statistics Menu
 elif menu == "History Data Pasien":
     st.subheader("History Data Pasien")
-    st.dataframe(history_data)
+    st.dataframe(st.session_state.history_data)
 
     # Statistik Sederhana
     st.markdown("### Statistik Data History Pasien")
-    if not history_data.empty:
-        stat_umur = history_data["Umur"].mean()
-        jumlah_berisiko = history_data[
-            history_data["Hasil Prediksi"] == "Berisiko"
+    if not st.session_state.history_data.empty:
+        stat_umur = st.session_state.history_data["Umur"].mean()
+        jumlah_berisiko = st.session_state.history_data[
+            st.session_state.history_data["Hasil Prediksi"] == "Berisiko"
         ].shape[0]
-        jumlah_tidak_berisiko = history_data[
-            history_data["Hasil Prediksi"] == "Tidak Berisiko"
+        jumlah_tidak_berisiko = st.session_state.history_data[
+            st.session_state.history_data["Hasil Prediksi"] == "Tidak Berisiko"
         ].shape[0]
 
         col1, col2, col3 = st.columns(3)
@@ -292,7 +294,7 @@ if menu == "Statistik Penyakit Stroke":
             title="Distribusi Faktor Risiko",
             color_discrete_sequence=px.colors.sequential.RdBu,
         )
-        st.plotly_chart(fig1, use_container_width=True)
+        st.plotly_chart(fig1, use_column_width=True)
 
     # Bar Chart
     with col_b:
@@ -304,7 +306,7 @@ if menu == "Statistik Penyakit Stroke":
             color="Kategori",
             color_discrete_sequence=px.colors.sequential.RdBu,
         )
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, use_column_width=True)
 
     st.markdown("### Tren dan Korelasi Faktor Risiko")
     col_c, col_d = st.columns(2)
@@ -320,7 +322,7 @@ if menu == "Statistik Penyakit Stroke":
             line_shape="linear",
             color_discrete_sequence=px.colors.sequential.RdBu[1:4],
         )
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, use_column_width=True)
 
     # Heatmap
     with col_d:
@@ -334,7 +336,7 @@ if menu == "Statistik Penyakit Stroke":
             )
         )
         fig4.update_layout(title="Korelasi Antar Faktor Risiko", title_x=0.5)
-        st.plotly_chart(fig4, use_container_width=True)
+        st.plotly_chart(fig4, use_column_width=True)
 
     # Insight Section
     st.markdown("### Insight")
