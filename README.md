@@ -4,6 +4,9 @@ This project predicts stroke using the Random Forest model. The model was refine
 ## Demo
 ![Alt Text](https://github.com/user-attachments/assets/e55f344d-a116-47a4-8d19-e284520760ed)
 
+Live Demo
+https://stroke-prediction.up.railway.app/
+
 
 
 ## Installation and Setup
