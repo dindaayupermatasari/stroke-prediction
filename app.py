@@ -5,8 +5,19 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
+# ==================================================
+# SET PAGE CONFIG — HARUS PALING ATAS
+# ==================================================
+st.set_page_config(
+    page_title="Dashboard Prediksi Penyakit Stroke",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
-# Load the model for predictions
+
+# ==================================================
+# LOAD MODEL
+# ==================================================
 @st.cache_resource
 def load_model():
     return joblib.load("models/stroke_model.pkl")
