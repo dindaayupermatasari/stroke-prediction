@@ -24,3 +24,7 @@ streamlit run app.py
 ```
 
 4. Access the Web App: Open your browser and navigate to the URL provided by Streamlit, usually http://localhost:8501.
+
+## Team
+Dea Kayla Putri D.  
+Dinda Ayu Permatasari
